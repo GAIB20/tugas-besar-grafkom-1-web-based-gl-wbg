@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../src/style.css">
+    <title>Document</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="Title">
+        <h1>2D Primitive Elements</h1>
+    </div>
+    <div class="editing">
+        <div class="container">
+            <div class="shape">
+                <h2>Select a Shape to draw:</h2>
+                <button id="line">Line</button>
+                <button id="square">Square</button>
+                <button id="rectangle">Rectangle</button>
+                <button id="polygon">Polygon</button>
+            </div> 
+            <div class="feature">
+                <h2>Features:</h2>
+                <button id="fill">Save</button>
+                <button id="stroke">Choose File</button>
+                <button id="strokeWeight">Edit Image</button>
+                <button id="strokeColor">Clear Image</button>
+            </div>
+            <div class="color-edit">
+                <h2>Color:</h2>
+                <input type="color" id="fill-color" name="fill-color" value="#000000">
+            </div>
+            <div class="transformation-edit">
+                <h2>Transformation:</h2>
+                <div class="translation">
+                    <div class="translation-x">
+                        <label for="translation-x">Translation X:</label><br>
+                        <input type="range" id="translation-x" name="translation-x" min="-100" max="100" value="0">
+                        <br><br>
+                    </div>
+                    <div class="translation-y">
+                        <label for="translation-y">Translation Y:</label><br>
+                        <input type="range" id="translation-y" name="translation-y" min="-100" max="100" value="0">
+                        <br><br>
+                    </div>
+                </div>
+                <div class="dilarotate">
+                    <div class="dilatation">
+                        <label for="dilatation">Dilatation:</label><br>
+                        <input type="range" id="dilatation" name="dilatation" min="0" max="2" value="1" step="0.1">
+                        <br><br>
+                    </div>
+                    <div class="rotate">
+                        <label for="rotate">Rotate:</label><br>
+                        <input type="range" id="rotate" name="rotate" min="0" max="360" value="0">
+                        <br><br>
+                    </div>
+                </div>
+                <div class="shear">
+                    <div class="shear-x">
+                        <label for="shear-x">Shear X:</label><br>
+                        <input type="range" id="shear-x" name="shear-x" min="-100" max="100" value="0">
+                        <br><br>
+                    </div>
+                    <div class="shear-y">
+                        <label for="shear-y">Shear Y:</label><br>
+                        <input type="range" id="shear-y" name="shear-y" min="-100" max="100" value="0">
+                        <br><br>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="canvas">
+            <canvas id="webgl-canvas" width="700" height="550" style="border: 1px solid black;"></canvas>
+        </div>
+        <div class="shape-list">
+            <h2>Shape List:</h2>
+            <ul id="shape-list">
+            </ul>
+        </div> 
+    </div>
+    <script src="../src/test.js"></script>
+</body>
+</html>

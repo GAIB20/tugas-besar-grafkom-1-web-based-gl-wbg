@@ -1,0 +1,33 @@
+body{
+    background-color: #fcf4a3;
+    font-family: "Montserrat", sans-serif;
+}
+
+h1{
+    margin-top: 45px;
+    font-size: 40px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.editing{
+    display: flex;
+}
+
+.container{
+    margin-left: 20px;
+    margin-right: 51px;
+}
+
+.translation, .dilarotate, .shear{
+    display: flex;
+}
+
+.translation-x, .dilatation, .shear-x{
+    margin-right: 25px;
+}
+
+.canvas{
+    margin-top: 20px;
+    margin-right: 45px;
+}

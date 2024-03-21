@@ -1,78 +1,80 @@
-// Get the canvas element
-const canvas = document.getElementById('webgl-canvas');
-// Initialize WebGL context
-const gl = canvas.getContext('webgl');
+window.onload = function() {
+    // Get WebGL context
+    var canvas = document.getElementById('webgl-canvas');
+    var gl = canvas.getContext('webgl');
 
-// Vertex shader program
-const vsSource = `
-    attribute vec2 aPosition;
-
-    void main() {
-        gl_Position = vec4(aPosition, 0.0, 1.0);
+    if (!gl) {
+        console.error('Unable to initialize WebGL. Your browser may not support it.');
+        return;
     }
-`;
 
-// Fragment shader program
-const fsSource = `
-    precision mediump float;
-    uniform vec4 uColor;
+    // Change background color to yellow
+    gl.clearColor(0.0, 1.0, 1.0, 1.0); // R, G, B, Alpha
 
-    void main() {
-        gl_FragColor = uColor;
-    }
-`;
+    // Define vertices for a square
+    var squareVertices = [
+        -0.40,  0.35, 0.0,  // Top left
+        -0.30, -0.15, 0.0,  // Bottom left
+         0.20, -0.40, 0.0,  // Bottom right
+         0.00,  0.35, 0.0   // Top right
+    ];
 
-// Compile shader
-function compileShader(gl, source, type) {
-    const shader = gl.createShader(type);
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(shader));
-        gl.deleteShader(shader);
-        return null;
-    }
-    return shader;
-}
+    // Combine all vertices
+    var vertices = squareVertices;
 
-// Create vertex shader
-const vertexShader = compileShader(gl, vsSource, gl.VERTEX_SHADER);
-// Create fragment shader
-const fragmentShader = compileShader(gl, fsSource, gl.FRAGMENT_SHADER);
+    // Create buffer for vertices for rendering
+    var vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
 
-// Create shader program
-const shaderProgram = gl.createProgram();
-gl.attachShader(shaderProgram, vertexShader);
-gl.attachShader(shaderProgram, fragmentShader);
-gl.linkProgram(shaderProgram);
+    // Create vertex shader
 
-if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-    console.error('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
-}
+    // Source
+    var vertexShaderSource = `
+        attribute vec3 coordinates;
+        varying vec3 fragColor;
 
-gl.useProgram(shaderProgram);
+        void main(void) {
+            gl_Position = vec4(coordinates, 1.0);
+            fragColor = vec3(0.4, 0.0, 0.2);
+        }
+    `;
 
-// Define square vertices
-const vertices = [
-    -0.5, 0.5, // Top left
-    -0.5, -0.5, // Bottom left
-    0.5, -0.5, // Bottom right
-    0.5, 0.5 // Top right
-];
+    // Create fragment shader
+    var fragmentShaderSource = `
+        precision mediump float;
+        varying vec3 fragColor;
 
-// Create buffer
-const vertexBuffer = gl.createBuffer();
-gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+        void main(void) {
+            gl_FragColor = vec4(fragColor, 1.0);
+        }
+    `;
 
-// Get attribute location
-const positionAttributeLocation = gl.getAttribLocation(shaderProgram, 'aPosition');
-gl.enableVertexAttribArray(positionAttributeLocation);
-gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+    // Create vertex shader
+    var vertexShader = gl.createShader(gl.VERTEX_SHADER);
+    gl.shaderSource(vertexShader, vertexShaderSource);
+    gl.compileShader(vertexShader);
 
-// Set uniform color
-const colorUniformLocation = gl.getUniformLocation(shaderProgram, 'uColor');
-gl.uniform4fv(colorUniformLocation, [0.0, 0.0, 1.0, 1.0]); // Blue color
+    // Create fragment shader
+    var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+    gl.shaderSource(fragmentShader, fragmentShaderSource);
+    gl.compileShader(fragmentShader);
 
-// Draw square
-gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+    // Create shader program
+    var shaderProgram = gl.createProgram();
+    gl.attachShader(shaderProgram, vertexShader);
+    gl.attachShader(shaderProgram, fragmentShader);
+    gl.linkProgram(shaderProgram);
+    gl.useProgram(shaderProgram);
+
+    // Associate shader programs with vertex buffer
+    var coord = gl.getAttribLocation(shaderProgram, "coordinates");
+    gl.vertexAttribPointer(coord, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(coord);
+
+    // Clear canvas
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    // Draw the square
+    gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+};

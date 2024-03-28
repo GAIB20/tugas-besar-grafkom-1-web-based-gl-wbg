@@ -24,10 +24,10 @@
             </div> 
             <div class="feature">
                 <h2>Features:</h2>
-                <button id="fill">Save</button>
-                <button id="stroke">Choose File</button>
-                <button id="strokeWeight">Edit Image</button>
-                <button id="strokeColor">Clear Image</button>
+                <button id="save">Save</button>
+                <button id="load">Load File</button>
+                <button id="editShape">Edit Shape</button>
+                <button id="clearShape">Clear Shape</button>
             </div>
             <div class="color-edit">
                 <h2>Color:</h2>
@@ -74,14 +74,15 @@
             </div>
         </div>
         <div class="canvas">
-            <canvas id="webgl-canvas" width="700" height="550" style="border: 1px solid black ; background-color: white;"></canvas>
+            <canvas id="canvas" width="700" height="550" style="border: 1px solid black ; background-color: white;"></canvas>
         </div>
-        <div class="shape-list">
+        <div class="shape-listed">
             <h2>Shape List:</h2>
             <ul id="shape-list">
+                <li id="corner-list"></li>
             </ul>
         </div> 
     </div>
-    <script src="../src/test.js"></script>
+    <script src="../src/main.js"></script>
 </body>
 </html>

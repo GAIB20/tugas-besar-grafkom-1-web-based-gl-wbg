@@ -33,6 +33,16 @@ h1{
 }
 
 #shape-list{
-    margin-left: -42px;
+    list-style-type: none;
+    margin-left: -80px;
     margin-right: -20px;
+}
+
+#shape-list ul{
+    list-style-type: none;
+    margin-bottom: 10px;
+}
+
+#shape-list ul li{
+    list-style-type: none;
 }

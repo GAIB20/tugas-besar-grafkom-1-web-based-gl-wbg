@@ -12,12 +12,13 @@ const fillColor = document.getElementById('fill-Color');
 var isDrawing = false;
 var startX, startY, endX, endY;
 var shapes = [];
+let currentShapeType = null;
 
-function handleMouseDown(event, shapeType){
+function handleMouseDown(event){
     isDrawing = true;
     startX = event.offsetX;
     startY = event.offsetY;
-    if (shapeType == "square"){
+    if (currentShapeType == "square"){
         drawShape(gl, startX, startY, 80, 80, "square");
     }
     return shapes;
@@ -33,9 +34,9 @@ function handleMouseUp(event, shapeType){
     if (!isDrawing) return;
     isDrawing = false;
 
-    if (shapeType === "line") {
+    if (currentShapeType === "line") {
         drawShape(gl, startX, startY, endX, endY, "line");
-    } else if (shapeType === "rectangle") {
+    } else if (currentShapeType === "rectangle") {
         drawShape(gl, startX, startY, endX, endY, "rectangle");
     }
     return shapes;
@@ -43,6 +44,10 @@ function handleMouseUp(event, shapeType){
 
 // Draw Button Event Listener
 lineButton.addEventListener('click', function() {
+    canvas.removeEventListener('mousedown', handleMouseDown);
+    canvas.removeEventListener('mousemove', handleMouseMove);
+    canvas.removeEventListener('mouseup', handleMouseUp);
+    currentShapeType = "line";
     isDrawing = false;
     alert("Memulai gambar garis");
     canvas.addEventListener('mousedown', (event) => handleMouseDown(event, "line"));
@@ -51,6 +56,10 @@ lineButton.addEventListener('click', function() {
 });
 
 squareButton.addEventListener('click', function() {
+    canvas.removeEventListener('mousedown', handleMouseDown);
+    canvas.removeEventListener('mousemove', handleMouseMove);
+    canvas.removeEventListener('mouseup', handleMouseUp);
+    currentShapeType = "square";
     isDrawing = false;
     alert("Memulai gambar persegi");
     canvas.addEventListener('mousedown', (event) => handleMouseDown(event, "square"));
@@ -59,6 +68,10 @@ squareButton.addEventListener('click', function() {
 });
 
 rectangleButton.addEventListener('click', function() {
+    canvas.removeEventListener('mousedown', handleMouseDown);
+    canvas.removeEventListener('mousemove', handleMouseMove);
+    canvas.removeEventListener('mouseup', handleMouseUp);
+    currentShapeType = "rectangle";
     isDrawing = false;
     alert("Memulai gambar persegi panjang");
     canvas.addEventListener('mousedown', (event) => handleMouseDown(event, "rectangle"));
@@ -80,6 +93,24 @@ saveButton.addEventListener('click', function() {
 
 loadButton.addEventListener('click', function() {
     alert("Memuat gambar");
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json';
+    input.onchange = e => {
+        var file = e.target.files[0];
+        var reader = new FileReader();
+        reader.readAsText(file, 'UTF-8');
+        reader.onload = readerEvent => {
+            console.log("File loaded successfully.");
+            var content = readerEvent.target.result;
+            shapes = JSON.parse(content);
+            shapes.forEach((shape, shapeIndex) => {
+                redrawShape(shapeIndex);
+            });
+            displayShapeList(shapes);
+        }
+    }
+    input.click();
 });
 
 editButton.addEventListener('click', function() {
@@ -147,18 +178,18 @@ function redrawShape(shapeIndex, color) {
         var verticesList = shape.verticesList;
         var shapeType = shape.shapeType;
         var vertices = verticesList.flat();
-        var fragColor;
+        let fragColor;
 
         if (index === shapeIndex && color) {
             fragColor = `gl_FragColor = vec4(${color});`;
         } else {
             // Set color based on shape type
             if (shapeType === "line") {
-                fragColor = 'gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0);'; // Blue color for the line
+                fragColor = 'gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);';
             } else if (shapeType === "square") {
-                fragColor = 'gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);'; // Green color for the square
+                fragColor = 'gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);';
             } else if (shapeType === "rectangle") {
-                fragColor = 'gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);'; // Red color for the rectangle
+                fragColor = 'gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);';
             } else {
                 console.error("Invalid shape type");
                 return;
@@ -185,21 +216,21 @@ function drawShape(gl, startX, startY, endX, endY, shapeType) {
         verticesList = [ [startX / canvas.width * 2 - 1, 1 - startY / canvas.height * 2],
                          [endX / canvas.width * 2 - 1, 1 - endY / canvas.height * 2] ];
         primitiveType = gl.LINES;
-        var fragColor = 'gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0);'; // Blue color for the line
+        var fragColor = 'gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);';
     } else if (shapeType === "square"){
         verticesList = [ [startX / canvas.width * 2 - 1, 1 - startY / canvas.height * 2], 
                          [(startX + endX) / canvas.width * 2 - 1, 1 - startY / canvas.height * 2], 
                          [startX / canvas.width * 2 - 1, 1 - (startY + endY) / canvas.height * 2], 
                          [(startX + endX) / canvas.width * 2 - 1, 1 - (startY + endY) / canvas.height * 2] ];
         primitiveType = gl.TRIANGLE_STRIP;
-        var fragColor = 'gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);'; // Green color for the square
+        var fragColor = 'gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);';
     } else if (shapeType === "rectangle"){
         verticesList = [ [startX / canvas.width * 2 - 1, 1 - startY / canvas.height * 2],
                             [startX / canvas.width * 2 - 1, 1 - endY / canvas.height * 2],
                             [endX / canvas.width * 2 - 1, 1 - startY / canvas.height * 2],
                             [endX / canvas.width * 2 - 1, 1 - endY / canvas.height * 2] ];
         primitiveType = gl.TRIANGLE_STRIP;
-        var fragColor = 'gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);'; // Red color for the rectangle
+        var fragColor = 'gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);';
     } else {
         console.error("Invalid shape type");
         return;
@@ -231,14 +262,11 @@ function displayShapeList(arrayShape) {
 
     arrayShape.forEach((shape, shapeIndex) => {
         const shapeItem = document.createElement('ul');
-        
-        // Add checkbox to each shapeItem
         const shapeCheckbox = document.createElement('input');
         shapeCheckbox.type = 'checkbox';
         shapeCheckbox.id = `shape-${shapeIndex + 1}`;
         shapeItem.appendChild(shapeCheckbox);
-        
-        // Set text content for the shapeItem
+
         const shapeLabel = document.createElement('label');
         shapeLabel.textContent = `Shape ${shapeIndex + 1}:`;
         shapeLabel.htmlFor = `shape-${shapeIndex + 1}`;
@@ -246,38 +274,31 @@ function displayShapeList(arrayShape) {
 
         shape.verticesList.forEach((corner, cornerIndex) => {
             const cornerLi = document.createElement('li');
-            
-            // Add checkbox to each cornerLi
             const cornerCheckbox = document.createElement('input');
             cornerCheckbox.type = 'checkbox';
             cornerCheckbox.id = `corner-${shapeIndex + 1}-${cornerIndex + 1}`;
             cornerLi.appendChild(cornerCheckbox);
-            
-            // Set text content for the cornerLi
+
             const cornerLabel = document.createElement('label');
             cornerLabel.textContent = `Corner ${cornerIndex + 1}`;
             cornerLabel.htmlFor = `corner-${shapeIndex + 1}-${cornerIndex + 1}`;
             cornerLi.appendChild(cornerLabel);
-            
+
             shapeItem.appendChild(cornerLi);
-            
-            // Add event listener to each cornerLi (li)
+
             cornerCheckbox.addEventListener('click', () => {
                 console.log(`Shape ${shapeIndex + 1}-Corner ${cornerIndex + 1} clicked`);
             });
         });
-
-        // Add event listener to shape checkbox
         shapeCheckbox.addEventListener('click', () => {
-            // Change the color of the shape when the checkbox is clicked
-            if (shapeCheckbox.checked) {
-                console.log(`Shape ${shapeIndex + 1} clicked`);
-                // get the coordinates
-                console.log(shape.verticesList);
-                redrawShape(shapeIndex, "purple");
-            }
+            console.log(`Shape ${shapeIndex + 1} clicked`);
+            shape.verticesList.forEach((_, cornerIndex) => {
+                const cornerCheckbox = document.getElementById(`corner-${shapeIndex + 1}-${cornerIndex + 1}`);
+                cornerCheckbox.checked = shapeCheckbox.checked;
+                console.log(`Shape ${shapeIndex + 1}-Corner ${cornerIndex + 1} clicked`);
+            });
         });
-        
+
         shapeList.appendChild(shapeItem);
     });
 }

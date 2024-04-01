@@ -7,7 +7,8 @@ const saveButton = document.getElementById('save');
 const loadButton = document.getElementById('load');
 const editButton = document.getElementById('editShape');
 const clearButton = document.getElementById('clearShape');
-const fillColor = document.getElementById('fill-Color');
+const fillColor = document.getElementById('fill-color');
+const shapeList = document.getElementById('shape-list');
 
 var isDrawing = false;
 var startX, startY, endX, endY;
@@ -18,10 +19,6 @@ function handleMouseDown(event){
     isDrawing = true;
     startX = event.offsetX;
     startY = event.offsetY;
-    if (currentShapeType == "square"){
-        drawShape(gl, startX, startY, 80, 80, "square");
-    }
-    return shapes;
 }
 
 function handleMouseMove(event){
@@ -36,6 +33,8 @@ function handleMouseUp(event, shapeType){
 
     if (currentShapeType === "line") {
         drawShape(gl, startX, startY, endX, endY, "line");
+    } else if (currentShapeType === "square") {
+        drawShape(gl, startX, startY, 80, 80, "square");
     } else if (currentShapeType === "rectangle") {
         drawShape(gl, startX, startY, endX, endY, "rectangle");
     }
@@ -92,7 +91,6 @@ saveButton.addEventListener('click', function() {
 });
 
 loadButton.addEventListener('click', function() {
-    alert("Memuat gambar");
     var input = document.createElement('input');
     input.type = 'file';
     input.accept = 'application/json';
@@ -124,6 +122,32 @@ clearButton.addEventListener('click', function() {
     displayShapeList(shapes);
 });
 
+// Fill Color Event Listener
+fillColor.addEventListener('input', function() {
+    const selectedColor = fillColor.value; 
+    const rgbaColor = hexToRgb(selectedColor);
+    console.log(rgbaColor);
+    console.log(shapes);
+    shapes.forEach(shape => {
+        shape.fragColorList = Array.from({ length: shape.fragColorList.length }, () => [...rgbaColor]);
+    });
+    redrawAllShapes();
+});
+
+function redrawAllShapes() {
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    shapes.forEach((shape, index) => redrawShape(index));
+}
+
+function hexToRgb(hex) {
+    hex = hex.replace('#', '');
+    return [
+        parseInt(hex.substring(0, 2), 16) / 255,
+        parseInt(hex.substring(2, 4), 16) / 255,
+        parseInt(hex.substring(4, 6), 16) / 255,
+        1.0
+    ];
+}
 
 // Define the canvas and WebGL context variables in the global scope
 var canvas = document.getElementById("canvas");
@@ -133,42 +157,40 @@ if (!gl) {
     console.error("Unable to initialize WebGL. Your browser may not support it.");
 }
 
-function setupShapeDrawing(gl, vertices, fragColor) {
-    // Create an empty buffer object to store the vertices
-    var vertexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+var shaderProgram;
 
+function setupShapeDrawing(gl) {
+    // Vertices shader code
     var vertCode =
         'attribute vec2 coordinates;' +
+        'attribute vec4 vertexColor;' +
+        'varying vec4 fragColor;' +
         'void main(void) {' +
         ' gl_Position = vec4(coordinates, 0.0, 1.0);' +
+        ' fragColor = vertexColor;' +
         '}';
 
     var vertShader = gl.createShader(gl.VERTEX_SHADER);
     gl.shaderSource(vertShader, vertCode);
     gl.compileShader(vertShader);
 
+    // Fragment shader code
     var fragCode =
+        'precision mediump float;' +
+        'varying vec4 fragColor;' +
         'void main(void) {' +
-        fragColor +
+        ' gl_FragColor = fragColor;' +
         '}';
 
     var fragShader = gl.createShader(gl.FRAGMENT_SHADER);
     gl.shaderSource(fragShader, fragCode);
     gl.compileShader(fragShader);
 
-    var shaderProgram = gl.createProgram();
+    shaderProgram = gl.createProgram();
     gl.attachShader(shaderProgram, vertShader);
     gl.attachShader(shaderProgram, fragShader);
     gl.linkProgram(shaderProgram);
     gl.useProgram(shaderProgram);
-
-    var coord = gl.getAttribLocation(shaderProgram, "coordinates");
-    gl.vertexAttribPointer(coord, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(coord);
-
-    return shaderProgram;
 }
 
 function redrawShape(shapeIndex, color) {
@@ -178,32 +200,34 @@ function redrawShape(shapeIndex, color) {
         var verticesList = shape.verticesList;
         var shapeType = shape.shapeType;
         var vertices = verticesList.flat();
-        let fragColor;
+        var fragColorList = shape.fragColorList;
 
         if (index === shapeIndex && color) {
-            fragColor = `gl_FragColor = vec4(${color});`;
-        } else {
-            // Set color based on shape type
-            if (shapeType === "line") {
-                fragColor = 'gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);';
-            } else if (shapeType === "square") {
-                fragColor = 'gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);';
-            } else if (shapeType === "rectangle") {
-                fragColor = 'gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);';
-            } else {
-                console.error("Invalid shape type");
-                return;
-            }
+            fragColorList = Array.from({ length: fragColorList.length }, () => [...color]);
         }
 
-        var shaderProgram = setupShapeDrawing(gl, vertices, fragColor);
         var primitiveType;
+        var primitiveType = shapeType === "line" ? gl.LINES : gl.TRIANGLE_STRIP;
 
-        if (shapeType === "line") {
-            primitiveType = gl.LINES;
-        } else {
-            primitiveType = gl.TRIANGLE_STRIP;
-        }
+        setupShapeDrawing(gl);
+
+        var vertexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+
+        var colorBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(fragColorList.flat()), gl.STATIC_DRAW);
+
+        var coord = gl.getAttribLocation(shaderProgram, "coordinates");
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+        gl.vertexAttribPointer(coord, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(coord);
+
+        var vertexColor = gl.getAttribLocation(shaderProgram, "vertexColor");
+        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+        gl.vertexAttribPointer(vertexColor, 4, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(vertexColor);
 
         gl.drawArrays(primitiveType, 0, vertices.length / 2);
     });
@@ -211,51 +235,51 @@ function redrawShape(shapeIndex, color) {
 
 function drawShape(gl, startX, startY, endX, endY, shapeType) {
     var vertices = [];
+    var fragColorList = [ [0.0, 0.0, 0.0, 1.0], 
+                          [0.0, 0.0, 0.0, 1.0], 
+                          [0.0, 0.0, 0.0, 1.0], 
+                          [0.0, 0.0, 0.0, 1.0] ];
 
     if (shapeType === "line"){
-        verticesList = [ [startX / canvas.width * 2 - 1, 1 - startY / canvas.height * 2],
+        var verticesList = [ [startX / canvas.width * 2 - 1, 1 - startY / canvas.height * 2],
                          [endX / canvas.width * 2 - 1, 1 - endY / canvas.height * 2] ];
         primitiveType = gl.LINES;
-        var fragColor = 'gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);';
     } else if (shapeType === "square"){
-        verticesList = [ [startX / canvas.width * 2 - 1, 1 - startY / canvas.height * 2], 
+        var verticesList = [ [startX / canvas.width * 2 - 1, 1 - startY / canvas.height * 2], 
                          [(startX + endX) / canvas.width * 2 - 1, 1 - startY / canvas.height * 2], 
                          [startX / canvas.width * 2 - 1, 1 - (startY + endY) / canvas.height * 2], 
                          [(startX + endX) / canvas.width * 2 - 1, 1 - (startY + endY) / canvas.height * 2] ];
         primitiveType = gl.TRIANGLE_STRIP;
-        var fragColor = 'gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);';
     } else if (shapeType === "rectangle"){
-        verticesList = [ [startX / canvas.width * 2 - 1, 1 - startY / canvas.height * 2],
+        var verticesList = [[startX / canvas.width * 2 - 1, 1 - startY / canvas.height * 2],
                             [startX / canvas.width * 2 - 1, 1 - endY / canvas.height * 2],
                             [endX / canvas.width * 2 - 1, 1 - startY / canvas.height * 2],
                             [endX / canvas.width * 2 - 1, 1 - endY / canvas.height * 2] ];
         primitiveType = gl.TRIANGLE_STRIP;
-        var fragColor = 'gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);';
     } else {
         console.error("Invalid shape type");
         return;
     }
 
     vertices = verticesList.flat();
+    fragColor = fragColorList.flat();
     var shaderProgram = setupShapeDrawing(gl, vertices, fragColor);
     gl.drawArrays(primitiveType, 0, vertices.length / 2);
-    storeShape(verticesList, shapeType);
+    storeShape(verticesList, shapeType, fragColorList);
     console.log(shapes);
     displayShapeList(shapes);
     redrawShape(shapes.length - 1);
 }
 
-// Store the shapes that i draw into the shapes array
-function storeShape(verticesList, shapeType){
+function storeShape(verticesList, shapeType, fragColorList) {
     var shape = {
         verticesList: verticesList,
-        shapeType: shapeType
+        shapeType: shapeType,
+        fragColorList: fragColorList
     };
     shapes.push(shape);
     return shapes;
 }
-
-const shapeList = document.getElementById('shape-list');
 
 function displayShapeList(arrayShape) {
     shapeList.innerHTML = '';
@@ -288,14 +312,18 @@ function displayShapeList(arrayShape) {
 
             cornerCheckbox.addEventListener('click', () => {
                 console.log(`Shape ${shapeIndex + 1}-Corner ${cornerIndex + 1} clicked`);
+                console.log(`Coordinate: (${corner[0]}, ${corner[1]})`);
+                console.log(`Color: (${shape.fragColorList[cornerIndex][0]}, ${shape.fragColorList[cornerIndex][1]}, ${shape.fragColorList[cornerIndex][2]}, ${shape.fragColorList[cornerIndex][3]})`);
             });
         });
         shapeCheckbox.addEventListener('click', () => {
             console.log(`Shape ${shapeIndex + 1} clicked`);
+
             shape.verticesList.forEach((_, cornerIndex) => {
                 const cornerCheckbox = document.getElementById(`corner-${shapeIndex + 1}-${cornerIndex + 1}`);
                 cornerCheckbox.checked = shapeCheckbox.checked;
                 console.log(`Shape ${shapeIndex + 1}-Corner ${cornerIndex + 1} clicked`);
+                console.log(`Coordinate: (${shape.verticesList[cornerIndex][0]}, ${shape.verticesList[cornerIndex][1]})`);
             });
         });
 

@@ -52,6 +52,10 @@ h1{
     margin-right: -20px;
 }
 
+.shape-listed h2{
+    margin-bottom: 10px;
+}
+
 #shape-list ul{
     list-style-type: none;
     margin-bottom: 10px;

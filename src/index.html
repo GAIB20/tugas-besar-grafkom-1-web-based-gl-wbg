@@ -39,12 +39,12 @@
                 <div class="translation">
                     <div class="translation-x">
                         <label for="translation-x">Translation X:</label><br>
-                        <input type="range" id="translation-x" name="translation-x" min="-100" max="100" value="0">
+                        <input type="range" id="translation-x" name="translation-x" min="-1" max="1" step="0.01" value="0">
                         <br><br>
                     </div>
                     <div class="translation-y">
                         <label for="translation-y">Translation Y:</label><br>
-                        <input type="range" id="translation-y" name="translation-y" min="-100" max="100" value="0">
+                        <input type="range" id="translation-y" name="translation-y" min="-1" max="1" step="0.01" value="0">
                         <br><br>
                     </div>
                 </div>
@@ -79,10 +79,11 @@
         </div>
         <div class="shape-listed">
             <h2>Shape List:</h2>
+            <button id="uncheck">Uncheck All</button>
             <ul id="shape-list">
                 <li id="corner-list"></li>
             </ul>
-        </div> 
+        </div>
     </div>
     <script src="../src/main.js"></script>
 </body>

@@ -9,6 +9,7 @@ const editButton = document.getElementById('editShape');
 const clearButton = document.getElementById('clearShape');
 const fillColor = document.getElementById('fill-color');
 const shapeList = document.getElementById('shape-list');
+const unchecked = document.getElementById('uncheck');
 
 var isDrawing = false;
 var startX, startY, endX, endY;
@@ -47,8 +48,8 @@ lineButton.addEventListener('click', function() {
     canvas.removeEventListener('mousemove', handleMouseMove);
     canvas.removeEventListener('mouseup', handleMouseUp);
     currentShapeType = "line";
-    isDrawing = false;
     alert("Memulai gambar garis");
+    fillColor.value = "#000000";
     canvas.addEventListener('mousedown', (event) => handleMouseDown(event, "line"));
     canvas.addEventListener('mousemove', (event) => handleMouseMove(event));
     canvas.addEventListener('mouseup', (event) => handleMouseUp(event, "line"));
@@ -59,8 +60,8 @@ squareButton.addEventListener('click', function() {
     canvas.removeEventListener('mousemove', handleMouseMove);
     canvas.removeEventListener('mouseup', handleMouseUp);
     currentShapeType = "square";
-    isDrawing = false;
     alert("Memulai gambar persegi");
+    fillColor.value = "#000000";
     canvas.addEventListener('mousedown', (event) => handleMouseDown(event, "square"));
     canvas.addEventListener('mousemove', (event) => handleMouseMove(event));
     canvas.addEventListener('mouseup', (event) => handleMouseUp(event, "square"));
@@ -71,8 +72,8 @@ rectangleButton.addEventListener('click', function() {
     canvas.removeEventListener('mousemove', handleMouseMove);
     canvas.removeEventListener('mouseup', handleMouseUp);
     currentShapeType = "rectangle";
-    isDrawing = false;
     alert("Memulai gambar persegi panjang");
+    fillColor.value = "#000000";
     canvas.addEventListener('mousedown', (event) => handleMouseDown(event, "rectangle"));
     canvas.addEventListener('mousemove', (event) => handleMouseMove(event));
     canvas.addEventListener('mouseup', (event) => handleMouseUp(event, "rectangle"));
@@ -87,7 +88,16 @@ polygonButton.addEventListener('click', function() {
 saveButton.addEventListener('click', function() {
     alert("Menyimpan gambar");
     var updatedShapes = shapes;
-    saveToJsonFile(updatedShapes);
+    const shapesJson = JSON.stringify(updatedShapes);
+    const blob = new Blob([shapesJson], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'shapes.json';
+    document.body.appendChild(link);
+    link.click();
+    URL.revokeObjectURL(url);
+    document.body.removeChild(link);
 });
 
 loadButton.addEventListener('click', function() {
@@ -112,6 +122,10 @@ loadButton.addEventListener('click', function() {
 });
 
 editButton.addEventListener('click', function() {
+    isDrawing = false;
+    canvas.removeEventListener('mousedown', handleMouseDown);
+    canvas.removeEventListener('mousemove', handleMouseMove);
+    canvas.removeEventListener('mouseup', handleMouseUp);
     alert("Mengedit gambar");
 });
 
@@ -122,15 +136,32 @@ clearButton.addEventListener('click', function() {
     displayShapeList(shapes);
 });
 
+unchecked.addEventListener('click', function() {
+    const checkboxes = Array.from(document.querySelectorAll('input[type="checkbox"]'));
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+    });
+});
+
 // Fill Color Event Listener
 fillColor.addEventListener('input', function() {
     const selectedColor = fillColor.value; 
     const rgbaColor = hexToRgb(selectedColor);
-    console.log(rgbaColor);
-    console.log(shapes);
+    
+    // Iterate through each shape
     shapes.forEach(shape => {
-        shape.fragColorList = Array.from({ length: shape.fragColorList.length }, () => [...rgbaColor]);
+        const shapeCheckbox = document.getElementById(`shape-${shapes.indexOf(shape) + 1}`);
+        const cornerCheckboxes = Array.from({ length: shape.verticesList.length }, (_, index) => document.getElementById(`corner-${shapes.indexOf(shape) + 1}-${index + 1}`));
+        if (shapeCheckbox.checked) {
+            shape.fragColorList = Array.from({ length: shape.fragColorList.length }, () => [...rgbaColor]);
+        }
+        cornerCheckboxes.forEach((cornerCheckbox, cornerIndex) => {
+            if (cornerCheckbox.checked) {
+                shape.fragColorList[cornerIndex] = [...rgbaColor];
+            }
+        });
     });
+    
     redrawAllShapes();
 });
 
@@ -147,6 +178,83 @@ function hexToRgb(hex) {
         parseInt(hex.substring(4, 6), 16) / 255,
         1.0
     ];
+}
+
+// Transformations Listener
+const translationX = document.getElementById('translation-x');
+const translationY = document.getElementById('translation-y');
+const dilatation = document.getElementById('dilatation');
+const rotate = document.getElementById('rotate');
+const shearX = document.getElementById('shear-x');
+const shearY = document.getElementById('shear-y');
+
+translationX.addEventListener('input', function() {
+    const translationValue = parseFloat(translationX.value); 
+
+    shapes.forEach((selectedShape, index) => { 
+        const shapeCheckbox = document.getElementById(`shape-${index + 1}`);
+        if (shapeCheckbox.checked) {
+            const [minX, maxX] = getMinMaxX(selectedShape.verticesList); 
+            const centerX = (minX + maxX) / 2; 
+            const translationDistance = translationValue - centerX; 
+
+            selectedShape.verticesList.forEach(corner => {
+                corner[0] += translationDistance; 
+            });
+        }
+    });
+
+    redrawAllShapes(); 
+});
+
+// Function to get the minimum and maximum X coordinates of the shape
+function getMinMaxX(verticesList) {
+    let minX = verticesList[0][0];
+    let maxX = verticesList[0][0];
+    verticesList.forEach(corner => {
+        minX = Math.min(minX, corner[0]);
+        maxX = Math.max(maxX, corner[0]);
+    });
+    return [minX, maxX];
+}
+
+translationY.addEventListener('input', function() {
+    const translationValue = parseFloat(translationY.value); 
+
+    shapes.forEach((selectedShape, index) => {
+        const shapeCheckbox = document.getElementById(`shape-${index + 1}`);
+        if (shapeCheckbox.checked) {
+            const [minY, maxY] = getMinMaxY(selectedShape.verticesList);
+            const centerY = (minY + maxY) / 2;
+            const translationDistance = translationValue - centerY; 
+
+            selectedShape.verticesList.forEach(corner => {
+                corner[1] += translationDistance;
+            });
+        }
+    });
+
+    redrawAllShapes();
+});
+
+function getMinMaxY(verticesList) {
+    let minY = verticesList[0][1];
+    let maxY = verticesList[0][1];
+    verticesList.forEach(corner => {
+        minY = Math.min(minY, corner[1]);
+        maxY = Math.max(maxY, corner[1]);
+    });
+    return [minY, maxY];
+}
+
+function getSelectedShapeIndex() {
+    const checkboxes = Array.from(document.querySelectorAll('input[type="checkbox"]'));
+    for (let i = 0; i < checkboxes.length; i++) {
+        if (checkboxes[i].checked) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 // Define the canvas and WebGL context variables in the global scope
@@ -235,10 +343,8 @@ function redrawShape(shapeIndex, color) {
 
 function drawShape(gl, startX, startY, endX, endY, shapeType) {
     var vertices = [];
-    var fragColorList = [ [0.0, 0.0, 0.0, 1.0], 
-                          [0.0, 0.0, 0.0, 1.0], 
-                          [0.0, 0.0, 0.0, 1.0], 
-                          [0.0, 0.0, 0.0, 1.0] ];
+    var selectedColor = hexToRgb(fillColor.value);
+    var fragColorList = [selectedColor, selectedColor, selectedColor, selectedColor];
 
     if (shapeType === "line"){
         var verticesList = [ [startX / canvas.width * 2 - 1, 1 - startY / canvas.height * 2],
@@ -252,8 +358,8 @@ function drawShape(gl, startX, startY, endX, endY, shapeType) {
         primitiveType = gl.TRIANGLE_STRIP;
     } else if (shapeType === "rectangle"){
         var verticesList = [[startX / canvas.width * 2 - 1, 1 - startY / canvas.height * 2],
-                            [startX / canvas.width * 2 - 1, 1 - endY / canvas.height * 2],
                             [endX / canvas.width * 2 - 1, 1 - startY / canvas.height * 2],
+                            [startX / canvas.width * 2 - 1, 1 - endY / canvas.height * 2],
                             [endX / canvas.width * 2 - 1, 1 - endY / canvas.height * 2] ];
         primitiveType = gl.TRIANGLE_STRIP;
     } else {
@@ -311,35 +417,51 @@ function displayShapeList(arrayShape) {
             shapeItem.appendChild(cornerLi);
 
             cornerCheckbox.addEventListener('click', () => {
-                console.log(`Shape ${shapeIndex + 1}-Corner ${cornerIndex + 1} clicked`);
-                console.log(`Coordinate: (${corner[0]}, ${corner[1]})`);
-                console.log(`Color: (${shape.fragColorList[cornerIndex][0]}, ${shape.fragColorList[cornerIndex][1]}, ${shape.fragColorList[cornerIndex][2]}, ${shape.fragColorList[cornerIndex][3]})`);
+                if (cornerCheckbox.checked) {
+                    console.log(`Shape ${shapeIndex + 1}-Corner ${cornerIndex + 1} clicked`);
+                    console.log(`Coordinate: (${shape.verticesList[cornerIndex][0]}, ${shape.verticesList[cornerIndex][1]})`);
+                    console.log(`Color: (${shape.fragColorList[cornerIndex][0]}, ${shape.fragColorList[cornerIndex][1]}, ${shape.fragColorList[cornerIndex][2]}, ${shape.fragColorList[cornerIndex][3]})`);
+
+                    isDrawing = false;
+
+                    // Allow user to move the corner coordinate
+                    canvas.addEventListener('mousemove', moveCorner);
+            
+                    function moveCorner(event) {
+                        shape.verticesList[cornerIndex][0] = event.offsetX / canvas.width * 2 - 1;
+                        shape.verticesList[cornerIndex][1] = 1 - event.offsetY / canvas.height * 2;
+                        
+                        // Redraw the shape with the updated corner position
+                        redrawAllShapes();
+                    }
+            
+                    canvas.addEventListener('mouseup', function mouseUpHandler() {
+                        canvas.removeEventListener('mousemove', moveCorner);
+                        canvas.removeEventListener('mouseup', mouseUpHandler);
+                        
+                        // Update the shape list with the new corner position
+                        displayShapeList(shapes);
+                    });
+                }
             });
         });
+
         shapeCheckbox.addEventListener('click', () => {
             console.log(`Shape ${shapeIndex + 1} clicked`);
-
             shape.verticesList.forEach((_, cornerIndex) => {
-                const cornerCheckbox = document.getElementById(`corner-${shapeIndex + 1}-${cornerIndex + 1}`);
-                cornerCheckbox.checked = shapeCheckbox.checked;
-                console.log(`Shape ${shapeIndex + 1}-Corner ${cornerIndex + 1} clicked`);
-                console.log(`Coordinate: (${shape.verticesList[cornerIndex][0]}, ${shape.verticesList[cornerIndex][1]})`);
+                if (shapeCheckbox.checked) {
+                    const cornerCheckbox = document.getElementById(`corner-${shapeIndex + 1}-${cornerIndex + 1}`);
+                    cornerCheckbox.checked = shapeCheckbox.checked;
+                    console.log(`Shape ${shapeIndex + 1}-Corner ${cornerIndex + 1} clicked`);
+                    console.log(`Coordinate: (${shape.verticesList[cornerIndex][0]}, ${shape.verticesList[cornerIndex][1]})`);
+                    console.log(`Color: (${shape.fragColorList[cornerIndex][0]}, ${shape.fragColorList[cornerIndex][1]}, ${shape.fragColorList[cornerIndex][2]}, ${shape.fragColorList[cornerIndex][3]})`);
+                } else {
+                    const cornerCheckbox = document.getElementById(`corner-${shapeIndex + 1}-${cornerIndex + 1}`);
+                    cornerCheckbox.checked = shapeCheckbox.checked;
+                }
             });
         });
 
         shapeList.appendChild(shapeItem);
     });
-}
-
-function saveToJsonFile(shapesArray) {
-    const shapesJson = JSON.stringify(shapesArray);
-    const blob = new Blob([shapesJson], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'shapes.json';
-    document.body.appendChild(link);
-    link.click();
-    URL.revokeObjectURL(url);
-    document.body.removeChild(link);
 }

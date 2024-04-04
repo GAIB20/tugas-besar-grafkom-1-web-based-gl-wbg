@@ -64,3 +64,15 @@ h1{
 #shape-list ul li{
     list-style-type: none;
 }
+
+#dilatationValue, #shear-x, #shear-y{
+    width: 48px;
+}
+
+#rotateValue{
+    width: 55px;
+}
+
+#shearXButton{
+    margin-right: 7px;
+}

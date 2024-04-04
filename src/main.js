@@ -80,8 +80,27 @@ rectangleButton.addEventListener('click', function() {
 });
 
 polygonButton.addEventListener('click', function() {
-    isDrawing = true;
+    canvas.removeEventListener('mousedown', handleMouseDown);
+    canvas.removeEventListener('mousemove', handleMouseMove);
+    canvas.removeEventListener('mouseup', handleMouseUp);
+    currentShapeType = "polygon";
     alert("Memulai gambar poligon");
+    fillColor.value = "#000000";
+
+    // Declare verticesList array outside the event listener
+    var verticesList = [];
+    var fragColorList = [];
+
+    canvas.addEventListener('click', function(event) {
+        const rect = canvas.getBoundingClientRect();
+        const x = (event.clientX - rect.left) / canvas.width * 2 - 1;
+        const y = -((event.clientY - rect.top) / canvas.height * 2 - 1);
+
+        // Push x,y to verticesList array
+        verticesList.push([x, y]);
+        fragColorList.push(hexToRgb(fillColor.value));
+        drawPolygon(gl, verticesList, fragColorList);
+    });
 });
 
 // Feature Button Event Listener
@@ -194,11 +213,11 @@ const shearYValue = document.getElementById('shear-y');
 const shearYButton = document.getElementById('shearYButton');
 
 translationX.addEventListener('input', function() {
-    console.log("translation");
     const translationValue = parseFloat(translationX.value); 
 
     shapes.forEach((selectedShape, index) => { 
         const shapeCheckbox = document.getElementById(`shape-${index + 1}`);
+        const cornerCheckboxes = Array.from({ length: selectedShape.verticesList.length }, (_, cornerIndex) => document.getElementById(`corner-${index + 1}-${cornerIndex + 1}`));
         if (shapeCheckbox.checked) {
             const [minX, maxX] = getMinMaxX(selectedShape.verticesList); 
             const centerX = (minX + maxX) / 2; 
@@ -207,10 +226,48 @@ translationX.addEventListener('input', function() {
             selectedShape.verticesList.forEach(corner => {
                 corner[0] += translationDistance; 
             });
+        } else if (cornerCheckboxes.some(cornerCheckbox => cornerCheckbox.checked)) {
+            // Calculate the center translation distance
+            const [minX, maxX] = getMinMaxX(selectedShape.verticesList); 
+            const centerX = (minX + maxX) / 2; 
+            const translationDistance = translationValue - centerX; 
+            
+            cornerCheckboxes.forEach((cornerCheckbox, cornerIndex) => {
+                if (cornerCheckbox.checked) {
+                    selectedShape.verticesList[cornerIndex][0] += translationDistance; 
+                }
+            });
         }
     });
-
     redrawAllShapes(); 
+});
+
+translationY.addEventListener('input', function() {
+    const translationValue = parseFloat(translationY.value); 
+    shapes.forEach((selectedShape, index) => {
+        const shapeCheckbox = document.getElementById(`shape-${index + 1}`);
+        const cornerCheckboxes = Array.from({ length: selectedShape.verticesList.length }, (_, cornerIndex) => document.getElementById(`corner-${index + 1}-${cornerIndex + 1}`));
+        if (shapeCheckbox.checked) {
+            const [minY, maxY] = getMinMaxY(selectedShape.verticesList);
+            const centerY = (minY + maxY) / 2;
+            const translationDistance = translationValue - centerY; 
+            selectedShape.verticesList.forEach(corner => {
+                corner[1] += translationDistance;
+            });
+        } else if (cornerCheckboxes.some(cornerCheckbox => cornerCheckbox.checked)) {
+            const [minY, maxY] = getMinMaxY(selectedShape.verticesList);
+            const centerY = (minY + maxY) / 2;
+            const translationDistance = translationValue - centerY; 
+
+            cornerCheckboxes.forEach((cornerCheckbox, cornerIndex) => {
+                if (cornerCheckbox.checked) {
+                    console.log(`Shape ${index + 1}-Corner ${cornerIndex + 1} clicked`);
+                    selectedShape.verticesList[cornerIndex][1] += translationDistance; 
+                }
+            });
+        }
+    }); 
+    redrawAllShapes();
 });
 
 // Function to get the minimum and maximum X coordinates of the shape
@@ -224,27 +281,17 @@ function getMinMaxX(verticesList) {
     return [minX, maxX];
 }
 
-translationY.addEventListener('input', function() {
-    const translationValue = parseFloat(translationY.value); 
-
-    shapes.forEach((selectedShape, index) => {
-        const shapeCheckbox = document.getElementById(`shape-${index + 1}`);
-        if (shapeCheckbox.checked) {
-            const [minY, maxY] = getMinMaxY(selectedShape.verticesList);
-            const centerY = (minY + maxY) / 2;
-            const translationDistance = translationValue - centerY; 
-
-            selectedShape.verticesList.forEach(corner => {
-                corner[1] += translationDistance;
-            });
-        }
+function getMinMaxY(verticesList) {
+    let minY = verticesList[0][1];
+    let maxY = verticesList[0][1];
+    verticesList.forEach(corner => {
+        minY = Math.min(minY, corner[1]);
+        maxY = Math.max(maxY, corner[1]);
     });
-
-    redrawAllShapes();
-});
+    return [minY, maxY];
+}
 
 rotateButton.addEventListener('click', function() {
-    console.log("rotation");
     const degreeAngle = parseFloat(rotateValue.value);
     var radianAngle = degreeAngle * Math.PI / 180;
     var cosAngle = Math.cos(radianAngle);
@@ -270,7 +317,7 @@ rotateButton.addEventListener('click', function() {
 })
 
 dilatationButton.addEventListener('click', function() {
-    const dilatation = parseFloat(dilatationValue.value)
+    const dilatationFactor = parseFloat(dilatationValue.value);
     shapes.forEach((selectedShape, index) => {
         const shapeCheckbox = document.getElementById(`shape-${index + 1}`);
         if (shapeCheckbox.checked) {
@@ -281,14 +328,14 @@ dilatationButton.addEventListener('click', function() {
             selectedShape.verticesList.forEach(corner => {
                 var tempX = corner[0] - centerX;
                 var tempY = corner[1] - centerY;
-                corner[0] = tempX*dilatation + centerX
-                corner[1] = tempY*dilatation + centerY
+                corner[0] = tempX * dilatationFactor + centerX;
+                corner[1] = tempY * dilatationFactor + centerY;
             });
         }
     });
 
     redrawAllShapes();
-})
+});
 
 shearXButton.addEventListener('click', function() {
     const shear = parseFloat(shearXValue.value)
@@ -318,15 +365,7 @@ shearYButton.addEventListener('click', function() {
     redrawAllShapes();
 })
 
-function getMinMaxY(verticesList) {
-    let minY = verticesList[0][1];
-    let maxY = verticesList[0][1];
-    verticesList.forEach(corner => {
-        minY = Math.min(minY, corner[1]);
-        maxY = Math.max(maxY, corner[1]);
-    });
-    return [minY, maxY];
-}
+
 
 function getSelectedShapeIndex() {
     const checkboxes = Array.from(document.querySelectorAll('input[type="checkbox"]'));
@@ -456,6 +495,28 @@ function drawShape(gl, startX, startY, endX, endY, shapeType) {
     console.log(shapes);
     displayShapeList(shapes);
     redrawShape(shapes.length - 1);
+}
+
+const stopPolygon = document.getElementById('stopPolygon');
+
+function drawPolygon(gl, verticesList, fragColorList) {
+    var vertices = verticesList.flat();
+    var fragColor = fragColorList.flat();
+
+    stopPolygon.addEventListener('click', function() {
+        currentShapeType = null;
+        if (verticesList.length < 3) {
+            alert("Minimal 3 sudut untuk membuat poligon");
+            return;
+        }
+        var primitiveType = gl.TRIANGLE_FAN;
+        var shaderProgram = setupShapeDrawing(gl, vertices, fragColor);
+        gl.drawArrays(primitiveType, 0, vertices.length / 2);
+        storeShape(verticesList, "polygon", fragColorList);
+        console.log(shapes);
+        displayShapeList(shapes);
+        redrawShape(shapes.length - 1);
+    });
 }
 
 function storeShape(verticesList, shapeType, fragColorList) {

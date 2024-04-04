@@ -122,10 +122,11 @@ loadButton.addEventListener('click', function() {
 });
 
 editButton.addEventListener('click', function() {
-    isDrawing = false;
     canvas.removeEventListener('mousedown', handleMouseDown);
     canvas.removeEventListener('mousemove', handleMouseMove);
     canvas.removeEventListener('mouseup', handleMouseUp);
+    isDrawing = false;
+    currentShapeType = null;
     alert("Mengedit gambar");
 });
 
@@ -416,6 +417,8 @@ function storeShape(verticesList, shapeType, fragColorList) {
     return shapes;
 }
 
+const moveCorner = document.getElementById('moveCorner');
+
 function displayShapeList(arrayShape) {
     shapeList.innerHTML = '';
 
@@ -427,7 +430,7 @@ function displayShapeList(arrayShape) {
         shapeItem.appendChild(shapeCheckbox);
 
         const shapeLabel = document.createElement('label');
-        shapeLabel.textContent = `Shape ${shapeIndex + 1}:`;
+        shapeLabel.textContent = shape.shapeType.charAt(0).toUpperCase() + shape.shapeType.slice(1) + ` ${shapeIndex + 1}`;
         shapeLabel.htmlFor = `shape-${shapeIndex + 1}`;
         shapeItem.appendChild(shapeLabel);
 
@@ -445,34 +448,30 @@ function displayShapeList(arrayShape) {
 
             shapeItem.appendChild(cornerLi);
 
-            cornerCheckbox.addEventListener('click', () => {
-                if (cornerCheckbox.checked) {
-                    console.log(`Shape ${shapeIndex + 1}-Corner ${cornerIndex + 1} clicked`);
-                    console.log(`Coordinate: (${shape.verticesList[cornerIndex][0]}, ${shape.verticesList[cornerIndex][1]})`);
-                    console.log(`Color: (${shape.fragColorList[cornerIndex][0]}, ${shape.fragColorList[cornerIndex][1]}, ${shape.fragColorList[cornerIndex][2]}, ${shape.fragColorList[cornerIndex][3]})`);
-
-                    isDrawing = false;
-
-                    // Allow user to move the corner coordinate
-                    canvas.addEventListener('mousemove', moveCorner);
-            
-                    function moveCorner(event) {
-                        shape.verticesList[cornerIndex][0] = event.offsetX / canvas.width * 2 - 1;
-                        shape.verticesList[cornerIndex][1] = 1 - event.offsetY / canvas.height * 2;
-                        
-                        // Redraw the shape with the updated corner position
-                        redrawAllShapes();
+            moveCorner.addEventListener('click', () => {
+                cornerCheckbox.addEventListener('click', () => {
+                    if (cornerCheckbox.checked) {
+                        console.log(`Shape ${shapeIndex + 1}-Corner ${cornerIndex + 1} clicked`);
+                        console.log(`Coordinate: (${shape.verticesList[cornerIndex][0]}, ${shape.verticesList[cornerIndex][1]})`);
+                        console.log(`Color: (${shape.fragColorList[cornerIndex][0]}, ${shape.fragColorList[cornerIndex][1]}, ${shape.fragColorList[cornerIndex][2]}, ${shape.fragColorList[cornerIndex][3]})`);
+                    
+                        isDrawing = false;
+                        canvas.addEventListener('mousemove', moveCorner);
+                
+                        function moveCorner(event) {
+                            shape.verticesList[cornerIndex][0] = event.offsetX / canvas.width * 2 - 1;
+                            shape.verticesList[cornerIndex][1] = 1 - event.offsetY / canvas.height * 2;
+                            redrawAllShapes();
+                        }
+                
+                        canvas.addEventListener('mouseup', function mouseUpHandler() {
+                            canvas.removeEventListener('mousemove', moveCorner);
+                            canvas.removeEventListener('mouseup', mouseUpHandler);
+                            displayShapeList(shapes);
+                        });
                     }
-            
-                    canvas.addEventListener('mouseup', function mouseUpHandler() {
-                        canvas.removeEventListener('mousemove', moveCorner);
-                        canvas.removeEventListener('mouseup', mouseUpHandler);
-                        
-                        // Update the shape list with the new corner position
-                        displayShapeList(shapes);
-                    });
-                }
-            });
+                });
+            },);
         });
 
         shapeCheckbox.addEventListener('click', () => {

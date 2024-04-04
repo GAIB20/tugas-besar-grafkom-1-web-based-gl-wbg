@@ -184,11 +184,14 @@ function hexToRgb(hex) {
 // Transformations Listener
 const translationX = document.getElementById('translation-x');
 const translationY = document.getElementById('translation-y');
-const dilatation = document.getElementById('dilatation');
+const dilatationValue = document.getElementById('dilatationValue');
+const dilatationButton = document.getElementById('dilatationButton');
 const rotateValue = document.getElementById('rotateValue');
 const rotateButton = document.getElementById('rotateButton');
-const shearX = document.getElementById('shear-x');
-const shearY = document.getElementById('shear-y');
+const shearXValue = document.getElementById('shear-x');
+const shearXButton = document.getElementById('shearXButton');
+const shearYValue = document.getElementById('shear-y');
+const shearYButton = document.getElementById('shearYButton');
 
 translationX.addEventListener('input', function() {
     console.log("translation");
@@ -246,7 +249,6 @@ rotateButton.addEventListener('click', function() {
     var radianAngle = degreeAngle * Math.PI / 180;
     var cosAngle = Math.cos(radianAngle);
     var sinAngle = Math.sin(radianAngle);
-    console.log("degreeAngele", degreeAngle);
 
     shapes.forEach((selectedShape, index) => {
         const shapeCheckbox = document.getElementById(`shape-${index + 1}`);
@@ -260,6 +262,55 @@ rotateButton.addEventListener('click', function() {
                 var tempY = corner[1] - centerY;
                 corner[0] = tempX * cosAngle - tempY * sinAngle + centerX;
                 corner[1] = tempX * sinAngle + tempY * cosAngle + centerY;
+            });
+        }
+    });
+
+    redrawAllShapes();
+})
+
+dilatationButton.addEventListener('click', function() {
+    const dilatation = parseFloat(dilatationValue.value)
+    shapes.forEach((selectedShape, index) => {
+        const shapeCheckbox = document.getElementById(`shape-${index + 1}`);
+        if (shapeCheckbox.checked) {
+            const [minY, maxY] = getMinMaxY(selectedShape.verticesList);
+            const [minX, maxX] = getMinMaxX(selectedShape.verticesList); 
+            const centerY = (minY + maxY) / 2;
+            const centerX = (minX + maxX) / 2;
+            selectedShape.verticesList.forEach(corner => {
+                var tempX = corner[0] - centerX;
+                var tempY = corner[1] - centerY;
+                corner[0] = tempX*dilatation + centerX
+                corner[1] = tempY*dilatation + centerY
+            });
+        }
+    });
+
+    redrawAllShapes();
+})
+
+shearXButton.addEventListener('click', function() {
+    const shear = parseFloat(shearXValue.value)
+    shapes.forEach((selectedShape, index) => {
+        const shapeCheckbox = document.getElementById(`shape-${index + 1}`);
+        if (shapeCheckbox.checked) {
+            selectedShape.verticesList.forEach(corner => {
+                corner[0] = corner[1] * shear + corner[0]
+            });
+        }
+    });
+
+    redrawAllShapes();
+})
+
+shearYButton.addEventListener('click', function() {
+    const shear = parseFloat(shearYValue.value)
+    shapes.forEach((selectedShape, index) => {
+        const shapeCheckbox = document.getElementById(`shape-${index + 1}`);
+        if (shapeCheckbox.checked) {
+            selectedShape.verticesList.forEach(corner => {
+                corner[1] = corner[0] * shear + corner[1]
             });
         }
     });

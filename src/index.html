@@ -51,7 +51,8 @@
                 <div class="dilarotate">
                     <div class="dilatation">
                         <label for="dilatation">Dilatation:</label><br>
-                        <input type="range" id="dilatation" name="dilatation" min="0" max="2" value="1" step="0.1">
+                        <input type="number" id="dilatationValue" name="dilatation" min="0" value="1">
+                        <button id="dilatationButton">Dilatation</button>
                         <br><br>
                     </div>
                     <div class="rotate">
@@ -64,12 +65,14 @@
                 <div class="shear">
                     <div class="shear-x">
                         <label for="shear-x">Shear X:</label><br>
-                        <input type="range" id="shear-x" name="shear-x" min="-100" max="100" value="0">
+                        <input type="number" id="shear-x" name="shear-x" value="0">
+                        <button id="shearXButton">Shear X</button>
                         <br><br>
                     </div>
                     <div class="shear-y">
                         <label for="shear-y">Shear Y:</label><br>
-                        <input type="range" id="shear-y" name="shear-y" min="-100" max="100" value="0">
+                        <input type="number" id="shear-y" name="shear-y" value="0">
+                        <button id="shearYButton">Shear Y</button>
                         <br><br>
                     </div>
                 </div>

@@ -79,6 +79,18 @@ rectangleButton.addEventListener('click', function() {
     canvas.addEventListener('mouseup', (event) => handleMouseUp(event, "rectangle"));
 });
 
+var polygonVertices = [];
+var polygonFragColor = [];
+
+function addVertexToPolygon(event) {
+    const rect = canvas.getBoundingClientRect();
+    const x = (event.clientX - rect.left) / canvas.width * 2 - 1;
+    const y = -((event.clientY - rect.top) / canvas.height * 2 - 1);
+
+    polygonVertices.push([x, y]);
+    polygonFragColor.push(hexToRgb(fillColor.value));
+}
+
 polygonButton.addEventListener('click', function() {
     canvas.removeEventListener('mousedown', handleMouseDown);
     canvas.removeEventListener('mousemove', handleMouseMove);
@@ -86,21 +98,9 @@ polygonButton.addEventListener('click', function() {
     currentShapeType = "polygon";
     alert("Memulai gambar poligon");
     fillColor.value = "#000000";
-
-    // Declare verticesList array outside the event listener
-    var verticesList = [];
-    var fragColorList = [];
-
-    canvas.addEventListener('click', function(event) {
-        const rect = canvas.getBoundingClientRect();
-        const x = (event.clientX - rect.left) / canvas.width * 2 - 1;
-        const y = -((event.clientY - rect.top) / canvas.height * 2 - 1);
-
-        // Push x,y to verticesList array
-        verticesList.push([x, y]);
-        fragColorList.push(hexToRgb(fillColor.value));
-        drawPolygon(gl, verticesList, fragColorList);
-    });
+    polygonVertices.length = 0;
+    canvas.addEventListener('mousedown', addVertexToPolygon);
+    drawPolygon(gl, polygonVertices, polygonFragColor);
 });
 
 // Feature Button Event Listener
@@ -402,6 +402,11 @@ function setupShapeDrawing(gl) {
     gl.shaderSource(vertShader, vertCode);
     gl.compileShader(vertShader);
 
+    if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
+        console.error('Error compiling vertex shader:', gl.getShaderInfoLog(vertShader));
+        return;
+    }
+
     // Fragment shader code
     var fragCode =
         'precision mediump float;' +
@@ -414,6 +419,11 @@ function setupShapeDrawing(gl) {
     gl.shaderSource(fragShader, fragCode);
     gl.compileShader(fragShader);
 
+    if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
+        console.error('Error compiling fragment shader:', gl.getShaderInfoLog(fragShader));
+        return;
+    }
+
     shaderProgram = gl.createProgram();
     gl.attachShader(shaderProgram, vertShader);
     gl.attachShader(shaderProgram, fragShader);
@@ -421,7 +431,7 @@ function setupShapeDrawing(gl) {
     gl.useProgram(shaderProgram);
 }
 
-function redrawShape(shapeIndex, color) {
+function redrawShape(shapeIndex) {
     gl.clear(gl.COLOR_BUFFER_BIT); // Clear the canvas
 
     shapes.forEach(function(shape, index) {
@@ -430,18 +440,21 @@ function redrawShape(shapeIndex, color) {
         var vertices = verticesList.flat();
         var fragColorList = shape.fragColorList;
 
-        if (index === shapeIndex && color) {
-            fragColorList = Array.from({ length: fragColorList.length }, () => [...color]);
-        }
-
         var primitiveType;
-        var primitiveType = shapeType === "line" ? gl.LINES : gl.TRIANGLE_STRIP;
-
-        setupShapeDrawing(gl);
+        // If the shape is a line, use gl.LINES
+        if (shapeType === "line") {
+            primitiveType = gl.LINES;
+        } else if (shapeType === "square" || shapeType === "rectangle") {
+            primitiveType = gl.TRIANGLE_STRIP;
+        } else if (shapeType === "polygon") {
+            primitiveType = gl.TRIANGLE_FAN;
+        }
 
         var vertexBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+
+        setupShapeDrawing(gl);
 
         var colorBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
@@ -449,8 +462,8 @@ function redrawShape(shapeIndex, color) {
 
         var coord = gl.getAttribLocation(shaderProgram, "coordinates");
         gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-        gl.vertexAttribPointer(coord, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(coord);
+        gl.vertexAttribPointer(coord, 2, gl.FLOAT, false, 0, 0);
 
         var vertexColor = gl.getAttribLocation(shaderProgram, "vertexColor");
         gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
@@ -500,23 +513,50 @@ function drawShape(gl, startX, startY, endX, endY, shapeType) {
 const stopPolygon = document.getElementById('stopPolygon');
 
 function drawPolygon(gl, verticesList, fragColorList) {
-    var vertices = verticesList.flat();
-    var fragColor = fragColorList.flat();
-
     stopPolygon.addEventListener('click', function() {
         currentShapeType = null;
         if (verticesList.length < 3) {
             alert("Minimal 3 sudut untuk membuat poligon");
             return;
         }
-        var primitiveType = gl.TRIANGLE_FAN;
+        var verticesListFinal = convexHull(verticesList);
+        var fragColorFinal = verticesListFinal.map(() => hexToRgb(fillColor.value));
+        var vertices = verticesListFinal.flat();
+        var fragColor = fragColorFinal.flat();
         var shaderProgram = setupShapeDrawing(gl, vertices, fragColor);
-        gl.drawArrays(primitiveType, 0, vertices.length / 2);
-        storeShape(verticesList, "polygon", fragColorList);
-        console.log(shapes);
+        gl.drawArrays(gl.TRIANGLE_FAN, 0, vertices.length / 2);
+        storeShape(verticesListFinal, "polygon", fragColorFinal);
         displayShapeList(shapes);
         redrawShape(shapes.length - 1);
     });
+}
+
+function crossProduct(p1, p2, p3) {
+    return (p2[0] - p1[0]) * (p3[1] - p1[1]) - (p2[1] - p1[1]) * (p3[0] - p1[0]);
+}
+
+function convexHull(points) {
+    points.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const lowerHull = [];
+    for (const point of points) {
+        while (lowerHull.length >= 2 && crossProduct(lowerHull[lowerHull.length - 2], lowerHull[lowerHull.length - 1], point) <= 0) {
+            lowerHull.pop();
+        }
+        lowerHull.push(point);
+    }
+    
+    const upperHull = [];
+    for (let i = points.length - 1; i >= 0; i--) {
+        const point = points[i];
+        while (upperHull.length >= 2 && crossProduct(upperHull[upperHull.length - 2], upperHull[upperHull.length - 1], point) <= 0) {
+            upperHull.pop();
+        }
+        upperHull.push(point);
+    }
+    
+    upperHull.pop();
+    lowerHull.pop();
+    return lowerHull.concat(upperHull);
 }
 
 function storeShape(verticesList, shapeType, fragColorList) {

@@ -184,11 +184,13 @@ function hexToRgb(hex) {
 const translationX = document.getElementById('translation-x');
 const translationY = document.getElementById('translation-y');
 const dilatation = document.getElementById('dilatation');
-const rotate = document.getElementById('rotate');
+const rotateValue = document.getElementById('rotateValue');
+const rotateButton = document.getElementById('rotateButton');
 const shearX = document.getElementById('shear-x');
 const shearY = document.getElementById('shear-y');
 
 translationX.addEventListener('input', function() {
+    console.log("translation");
     const translationValue = parseFloat(translationX.value); 
 
     shapes.forEach((selectedShape, index) => { 
@@ -236,6 +238,33 @@ translationY.addEventListener('input', function() {
 
     redrawAllShapes();
 });
+
+rotateButton.addEventListener('click', function() {
+    console.log("rotation");
+    const degreeAngle = parseFloat(rotateValue.value);
+    var radianAngle = degreeAngle * Math.PI / 180;
+    var cosAngle = Math.cos(radianAngle);
+    var sinAngle = Math.sin(radianAngle);
+    console.log("degreeAngele", degreeAngle);
+
+    shapes.forEach((selectedShape, index) => {
+        const shapeCheckbox = document.getElementById(`shape-${index + 1}`);
+        if (shapeCheckbox.checked) {
+            const [minY, maxY] = getMinMaxY(selectedShape.verticesList);
+            const [minX, maxX] = getMinMaxX(selectedShape.verticesList); 
+            const centerY = (minY + maxY) / 2;
+            const centerX = (minX + maxX) / 2;
+            selectedShape.verticesList.forEach(corner => {
+                var tempX = corner[0] - centerX;
+                var tempY = corner[1] - centerY;
+                corner[0] = tempX * cosAngle - tempY * sinAngle + centerX;
+                corner[1] = tempX * sinAngle + tempY * cosAngle + centerY;
+            });
+        }
+    });
+
+    redrawAllShapes();
+})
 
 function getMinMaxY(verticesList) {
     let minY = verticesList[0][1];

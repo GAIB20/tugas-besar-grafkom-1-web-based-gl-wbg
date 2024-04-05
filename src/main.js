@@ -18,6 +18,7 @@ var isDrawing = false;
 var startX, startY, endX, endY;
 var shapes = [];
 let currentShapeType = null;
+let squareSize;
 var polygonVertices = [];
 var polygonFragColor = [];
 
@@ -39,11 +40,10 @@ function handleMouseMove(event){
 function handleMouseUp(event, shapeType){
     if (!isDrawing) return;
     isDrawing = false;
-
     if (currentShapeType === "line") {
         drawShape(gl, startX, startY, endX, endY, "line");
     } else if (currentShapeType === "square") {
-        drawShape(gl, startX, startY, 80, 80, "square");
+        drawShape(gl, startX, startY, squareSize, squareSize, "square");
     } else if (currentShapeType === "rectangle") {
         drawShape(gl, startX, startY, endX, endY, "rectangle");
     }
@@ -64,17 +64,22 @@ lineButton.addEventListener('click', function() {
     canvas.addEventListener('mouseup', (event) => handleMouseUp(event, "line"));
 });
 
-// Event listener untuk menggambar persegi
 squareButton.addEventListener('click', function() {
     canvas.removeEventListener('mousedown', handleMouseDown);
     canvas.removeEventListener('mousemove', handleMouseMove);
     canvas.removeEventListener('mouseup', handleMouseUp);
     currentShapeType = "square";
-    alert("Memulai gambar persegi");
-    fillColor.value = "#000000";
-    canvas.addEventListener('mousedown', (event) => handleMouseDown(event, "square"));
-    canvas.addEventListener('mousemove', (event) => handleMouseMove(event));
-    canvas.addEventListener('mouseup', (event) => handleMouseUp(event, "square"));
+    squareSize = prompt("Enter the size of the square:");
+    if (squareSize !== null && squareSize !== "" && !isNaN(squareSize)) {
+        squareSize = parseFloat(squareSize);
+        alert("Memulai gambar persegi dengan ukuran: " + squareSize);
+        fillColor.value = "#000000";
+        canvas.addEventListener('mousedown', (event) => handleMouseDown(event, "square"));
+        canvas.addEventListener('mousemove', (event) => handleMouseMove(event));
+        canvas.addEventListener('mouseup', (event) => handleMouseUp(event, "square"));
+    } else {
+        alert("Invalid input. Please enter a valid number for the size.");
+    }
 });
 
 // Event listener untuk menggambar persegi panjang

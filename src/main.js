@@ -50,6 +50,8 @@ function handleMouseUp(event, shapeType){
         drawShape(gl, startX, startY, squareSize, squareSize, "square");
     } else if (currentShapeType === "rectangle") {
         drawShape(gl, startX, startY, endX, endY, "rectangle");
+    } else if (currentShapeType === "circle") {
+        drawCircle(gl, startX, startY, circleRadius);
     }
     return shapes;
 }
@@ -123,19 +125,13 @@ circleButton.addEventListener('click', function() {
     if (circleRadius !== null && circleRadius !== "" && !isNaN(circleRadius)) {
         circleRadius = parseFloat(circleRadius);
         alert("Memulai gambar lingkaran dengan ukuran radius: " + circleRadius);
-        canvas.addEventListener('click', (event) => handleCircleClick(event, circleRadius));
+        canvas.addEventListener('mousedown', (event) => handleMouseDown(event, "circle"));
+        canvas.addEventListener('mousemove', (event) => handleMouseMove(event));
+        canvas.addEventListener('mouseup', (event) => handleMouseUp(event, "circle"));
     } else {
         alert("Input tidak valid. Masukkan angka yang valid untuk ukuran radius.");
     }
 });
-
-// Fungsi untuk menangani klik untuk menggambar lingkaran
-function handleCircleClick(event, radius) {
-    const centerX = event.offsetX;
-    const centerY = event.offsetY;
-    drawCircle(gl, centerX, centerY, radius);
-    canvas.removeEventListener('click', handleCircleClick);
-}
 
 // Fungsi untuk menambahkan vertex yang digambar ke dalam poligon
 function addVertexToPolygon(event) {
@@ -583,6 +579,7 @@ function drawPolygon(gl, verticesList, fragColorList) {
     });
 }
 
+// Fungsi untuk menggambar lingkaran
 function drawCircle(gl, centerX, centerY, radius) {
     var vertices = [];
     var fragColorList = Array.from({ length: 360 }, () => hexToRgb(fillColor.value));

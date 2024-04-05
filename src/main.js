@@ -585,10 +585,13 @@ function convexHull(points) {
 
 // Cross Product Function
 function crossProduct(point1, point2, point3) {
-    return (point2[0] - point1[0]) * (point3[1] - point1[1]) - (point2[1] - point1[1]) * (point3[0] - point1[0]);
-}
+    return (
+      (point2[0] - point1[0]) * (point3[1] - point1[1]) -
+      (point2[1] - point1[1]) * (point3[0] - point1[0])
+    );
+  }
 
-// Fungsi Store Shape untuk menyimpan shape yang telah digambar
+
 function getNumberOfShapeChecked() {
     var number = 0;
     shapes.forEach((selectedShape, index) => {
@@ -603,7 +606,7 @@ function getNumberOfShapeChecked() {
       }
     });
     return number;
-}
+  }
   
 function getNumberOfCornerChecked(cornerCheckboxes) {
     result = [];
@@ -626,28 +629,56 @@ deleteCornerButton.addEventListener("click", function () {
         );
         if (cornerCheckboxes.some((cornerCheckbox) => cornerCheckbox.checked)) {
           var cornerChecked = getNumberOfCornerChecked(cornerCheckboxes);
-          console.log(cornerCheckboxes.length, "banyak sudut")
-          console.log(cornerChecked, "banyak sudut dipilih")
-          if ((cornerCheckboxes.length - cornerChecked.length) >= 3) {
-            console.log("masuk sini")
+          console.log(cornerCheckboxes.length, "banyak sudut");
+          console.log(cornerChecked, "banyak sudut dipilih");
+          if (cornerCheckboxes.length - cornerChecked.length >= 3) {
+            console.log("masuk sini");
             cornerChecked.forEach((idx) => {
-              console.log(idx, "dihapus")
+              console.log(idx, "dihapus");
               selectedShape.verticesList.splice(idx, 1);
             });
             redrawShape(index);
-            displayShapeList(shapes)
           } else {
             alert("Banyak Titik Sudut Harus Lebih Dari 3");
           }
         }
       });
     } else {
-        alert("Pilih Titik Sudut dalam Satu Bangun");
+      alert("Pilih Titik Sudut dalam Satu Bangun");
     }
-});
-  
+  });
   
 
+addCornerButton.addEventListener("click", function () {
+    if (getNumberOfShapeChecked() == 1) {
+      shapes.forEach((selectedShape, index) => {
+        const cornerCheckboxes = Array.from(
+            { length: selectedShape.verticesList.length },
+            (_, cornerIndex) =>
+              document.getElementById(`corner-${index + 1}-${cornerIndex + 1}`)
+          );
+          if (cornerCheckboxes.some((cornerCheckbox) => cornerCheckbox.checked)) {
+            canvas.removeEventListener('mousedown', handleMouseDown);
+            canvas.removeEventListener('mousemove', handleMouseMove);
+            canvas.removeEventListener('mouseup', handleMouseUp);
+            currentShapeType = "polygon";
+            alert("Memulai gambar poligon");
+            fillColor.value = "#000000";
+            polygonVertices.length = 0;
+            selectedShape.verticesList.forEach((vertice) => {
+                polygonVertices.push(vertice)
+            })
+            canvas.addEventListener('mousedown', addVertexToPolygon);
+            drawPolygon(gl, polygonVertices, polygonFragColor);
+          }
+      });
+    } else {
+      alert("Hanya bisa pilih satu bangun");
+    }
+  });
+  
+  
+// Fungsi Store Shape untuk menyimpan shape yang telah digambar
 function storeShape(verticesList, shapeType, fragColorList) {
     var shape = {
         verticesList: verticesList,

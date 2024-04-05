@@ -3,6 +3,7 @@ const lineButton = document.getElementById('line');
 const squareButton = document.getElementById('square');
 const rectangleButton = document.getElementById('rectangle');
 const polygonButton = document.getElementById('polygon');
+const circleButton = document.getElementById('circle');
 const saveButton = document.getElementById('save');
 const loadButton = document.getElementById('load');
 const editButton = document.getElementById('editShape');
@@ -12,6 +13,8 @@ const shapeList = document.getElementById('shape-list');
 const unchecked = document.getElementById('uncheck');
 const stopPolygon = document.getElementById('stopPolygon');
 const moveCorner = document.getElementById('moveCorner');
+const deleteCornerButton = document.getElementById('deleteCorner')
+const addCornerButton = document.getElementById('addCorner')
 
 // Initiate variable
 var isDrawing = false;
@@ -19,6 +22,7 @@ var startX, startY, endX, endY;
 var shapes = [];
 let currentShapeType = null;
 let squareSize;
+let circleRadius;
 var polygonVertices = [];
 var polygonFragColor = [];
 
@@ -64,12 +68,13 @@ lineButton.addEventListener('click', function() {
     canvas.addEventListener('mouseup', (event) => handleMouseUp(event, "line"));
 });
 
+// Event listener untuk menggambar persegi
 squareButton.addEventListener('click', function() {
     canvas.removeEventListener('mousedown', handleMouseDown);
     canvas.removeEventListener('mousemove', handleMouseMove);
     canvas.removeEventListener('mouseup', handleMouseUp);
     currentShapeType = "square";
-    squareSize = prompt("Enter the size of the square:");
+    squareSize = prompt("Masukkan ukuran panjang sisi persegi:");
     if (squareSize !== null && squareSize !== "" && !isNaN(squareSize)) {
         squareSize = parseFloat(squareSize);
         alert("Memulai gambar persegi dengan ukuran: " + squareSize);
@@ -78,7 +83,7 @@ squareButton.addEventListener('click', function() {
         canvas.addEventListener('mousemove', (event) => handleMouseMove(event));
         canvas.addEventListener('mouseup', (event) => handleMouseUp(event, "square"));
     } else {
-        alert("Invalid input. Please enter a valid number for the size.");
+        alert("Input tidak valid. Masukkan angka yang valid untuk ukuran sisi.");
     }
 });
 
@@ -107,6 +112,30 @@ polygonButton.addEventListener('click', function() {
     canvas.addEventListener('mousedown', addVertexToPolygon);
     drawPolygon(gl, polygonVertices, polygonFragColor);
 });
+
+// Event listener untuk menggambar lingkaran
+circleButton.addEventListener('click', function() {
+    canvas.removeEventListener('mousedown', handleMouseDown);
+    canvas.removeEventListener('mousemove', handleMouseMove);
+    canvas.removeEventListener('mouseup', handleMouseUp);
+    currentShapeType = "circle";
+    circleRadius = prompt("Masukkan ukuran radius lingkaran:");
+    if (circleRadius !== null && circleRadius !== "" && !isNaN(circleRadius)) {
+        circleRadius = parseFloat(circleRadius);
+        alert("Memulai gambar lingkaran dengan ukuran radius: " + circleRadius);
+        canvas.addEventListener('click', (event) => handleCircleClick(event, circleRadius));
+    } else {
+        alert("Input tidak valid. Masukkan angka yang valid untuk ukuran radius.");
+    }
+});
+
+// Fungsi untuk menangani klik untuk menggambar lingkaran
+function handleCircleClick(event, radius) {
+    const centerX = event.offsetX;
+    const centerY = event.offsetY;
+    drawCircle(gl, centerX, centerY, radius);
+    canvas.removeEventListener('click', handleCircleClick);
+}
 
 // Fungsi untuk menambahkan vertex yang digambar ke dalam poligon
 function addVertexToPolygon(event) {
@@ -230,8 +259,7 @@ const shearXValue = document.getElementById('shear-x');
 const shearXButton = document.getElementById('shearXButton');
 const shearYValue = document.getElementById('shear-y');
 const shearYButton = document.getElementById('shearYButton');
-const deleteCornerButton = document.getElementById('deleteCorner')
-const addCornerButton = document.getElementById('addCorner')
+
 
 // Listener untuk Transformasi Translasi dari sumbu X
 translationX.addEventListener('input', function() {
@@ -361,7 +389,6 @@ dilatationButton.addEventListener('click', function() {
     redrawAllShapes();
 });
 
-
 // Listener untuk Transformasi Shear dari Sumbu X
 shearXButton.addEventListener('click', function() {
     const shear = parseFloat(shearXValue.value)
@@ -473,7 +500,7 @@ function redrawShape(shapeIndex) {
             primitiveType = gl.LINES;
         } else if (shapeType === "square" || shapeType === "rectangle") {
             primitiveType = gl.TRIANGLE_STRIP;
-        } else if (shapeType === "polygon") {
+        } else if (shapeType === "polygon" || shapeType === "circle") {
             primitiveType = gl.TRIANGLE_FAN;
         }
 
@@ -556,6 +583,20 @@ function drawPolygon(gl, verticesList, fragColorList) {
     });
 }
 
+function drawCircle(gl, centerX, centerY, radius) {
+    var vertices = [];
+    var fragColorList = Array.from({ length: 360 }, () => hexToRgb(fillColor.value));
+    for (let i = 0; i < 360; i++) {
+        const angle = i * Math.PI / 180;
+        const x = centerX + radius * Math.cos(angle);
+        const y = centerY + radius * Math.sin(angle);
+        vertices.push(x / canvas.width * 2 - 1, 1 - y / canvas.height * 2);
+    }
+    storeShape(vertices, "circle", fragColorList);
+    displayShapeList(shapes);
+    redrawShape(shapes.length - 1);
+}
+
 // Fungsi Untuk Proses Convex Hull
 // Convex Hull with Graham's Scan Algorithm
 function convexHull(points) {
@@ -589,13 +630,12 @@ function crossProduct(point1, point2, point3) {
       (point2[0] - point1[0]) * (point3[1] - point1[1]) -
       (point2[1] - point1[1]) * (point3[0] - point1[0])
     );
-  }
+}
 
-
+// Fungsi untuk mendapatkan jumlah shape yang diceklis
 function getNumberOfShapeChecked() {
     var number = 0;
     shapes.forEach((selectedShape, index) => {
-      console.log(selectedShape.shapeType);
       const cornerCheckboxes = Array.from(
         { length: selectedShape.verticesList.length },
         (_, cornerIndex) =>
@@ -606,8 +646,9 @@ function getNumberOfShapeChecked() {
       }
     });
     return number;
-  }
-  
+}
+
+// Fungsi untuk mendapatkan corner yang diceklis
 function getNumberOfCornerChecked(cornerCheckboxes) {
     result = [];
     cornerCheckboxes.forEach((checkbox, index) => {
@@ -615,10 +656,10 @@ function getNumberOfCornerChecked(cornerCheckboxes) {
         result.unshift(index);
       }
     });
-    console.log("number of corner", result);
     return result;
 }
-  
+
+// Event listener untuk menghapus corner
 deleteCornerButton.addEventListener("click", function () {
     if (getNumberOfShapeChecked() == 1) {
       shapes.forEach((selectedShape, index) => {
@@ -629,12 +670,9 @@ deleteCornerButton.addEventListener("click", function () {
         );
         if (cornerCheckboxes.some((cornerCheckbox) => cornerCheckbox.checked)) {
           var cornerChecked = getNumberOfCornerChecked(cornerCheckboxes);
-          console.log(cornerCheckboxes.length, "banyak sudut");
-          console.log(cornerChecked, "banyak sudut dipilih");
           if (cornerCheckboxes.length - cornerChecked.length >= 3) {
-            console.log("masuk sini");
             cornerChecked.forEach((idx) => {
-              console.log(idx, "dihapus");
+                alert("Titik Sudut " + (idx + 1) + " dihapus");
               selectedShape.verticesList.splice(idx, 1);
             });
             redrawShape(index);
@@ -646,9 +684,9 @@ deleteCornerButton.addEventListener("click", function () {
     } else {
       alert("Pilih Titik Sudut dalam Satu Bangun");
     }
-  });
+});
   
-
+// Event listener untuk menambahkan corner
 addCornerButton.addEventListener("click", function () {
     if (getNumberOfShapeChecked() == 1) {
       shapes.forEach((selectedShape, index) => {
@@ -675,8 +713,7 @@ addCornerButton.addEventListener("click", function () {
     } else {
       alert("Hanya bisa pilih satu bangun");
     }
-  });
-  
+});
   
 // Fungsi Store Shape untuk menyimpan shape yang telah digambar
 function storeShape(verticesList, shapeType, fragColorList) {

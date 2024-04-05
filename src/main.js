@@ -595,30 +595,28 @@ function drawCircle(gl, centerX, centerY, radius) {
 }
 
 // Fungsi Untuk Proses Convex Hull
-// Convex Hull with Graham's Scan Algorithm
+// Convex Hull dengan Graham's Scan Algorithm
 function convexHull(points) {
     points.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-
-    const lowerHull = [];
+    // Bedakan dua jenis hull berdasarkan arah path pembentukan poligon convex hull
+    const hull1 = [];
     for (const point of points) {
-        while (lowerHull.length >= 2 && crossProduct(lowerHull[lowerHull.length - 2], lowerHull[lowerHull.length - 1], point) <= 0) {
-            lowerHull.pop();
+        while (hull1.length >= 2 && crossProduct(hull1[hull1.length - 2], hull1[hull1.length - 1], point) <= 0) {
+            hull1.pop();
         }
-        lowerHull.push(point);
+        hull1.push(point);
     }
-    
-    const upperHull = [];
+    const hull2 = [];
     for (let i = points.length - 1; i >= 0; i--) {
         const point = points[i];
-        while (upperHull.length >= 2 && crossProduct(upperHull[upperHull.length - 2], upperHull[upperHull.length - 1], point) <= 0) {
-            upperHull.pop();
+        while (hull2.length >= 2 && crossProduct(hull2[hull2.length - 2], hull2[hull2.length - 1], point) <= 0) {
+            hull2.pop();
         }
-        upperHull.push(point);
+        hull2.push(point);
     }
-    
-    upperHull.pop();
-    lowerHull.pop();
-    return lowerHull.concat(upperHull);
+    hull1.pop();
+    hull2.pop();
+    return hull1.concat(hull2);
 }
 
 // Cross Product Function

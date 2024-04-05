@@ -211,6 +211,8 @@ const shearXValue = document.getElementById('shear-x');
 const shearXButton = document.getElementById('shearXButton');
 const shearYValue = document.getElementById('shear-y');
 const shearYButton = document.getElementById('shearYButton');
+const deleteCornerButton = document.getElementById('deleteCorner')
+const addCornerButton = document.getElementById('addCorner')
 
 translationX.addEventListener('input', function() {
     const translationValue = parseFloat(translationX.value); 
@@ -558,6 +560,65 @@ function convexHull(points) {
     lowerHull.pop();
     return lowerHull.concat(upperHull);
 }
+
+function getNumberOfShapeChecked() {
+    var number = 0;
+    shapes.forEach((selectedShape, index) => {
+      console.log(selectedShape.shapeType);
+      const cornerCheckboxes = Array.from(
+        { length: selectedShape.verticesList.length },
+        (_, cornerIndex) =>
+          document.getElementById(`corner-${index + 1}-${cornerIndex + 1}`)
+      );
+      if (cornerCheckboxes.some((cornerCheckbox) => cornerCheckbox.checked)) {
+        number++;
+      }
+    });
+    return number;
+}
+  
+function getNumberOfCornerChecked(cornerCheckboxes) {
+    result = [];
+    cornerCheckboxes.forEach((checkbox, index) => {
+      if (checkbox.checked) {
+        result.unshift(index);
+      }
+    });
+    console.log("number of corner", result);
+    return result;
+}
+  
+deleteCornerButton.addEventListener("click", function () {
+    if (getNumberOfShapeChecked() == 1) {
+      shapes.forEach((selectedShape, index) => {
+        const cornerCheckboxes = Array.from(
+          { length: selectedShape.verticesList.length },
+          (_, cornerIndex) =>
+            document.getElementById(`corner-${index + 1}-${cornerIndex + 1}`)
+        );
+        if (cornerCheckboxes.some((cornerCheckbox) => cornerCheckbox.checked)) {
+          var cornerChecked = getNumberOfCornerChecked(cornerCheckboxes);
+          console.log(cornerCheckboxes.length, "banyak sudut")
+          console.log(cornerChecked, "banyak sudut dipilih")
+          if ((cornerCheckboxes.length - cornerChecked.length) >= 3) {
+            console.log("masuk sini")
+            cornerChecked.forEach((idx) => {
+              console.log(idx, "dihapus")
+              selectedShape.verticesList.splice(idx, 1);
+            });
+            redrawShape(index);
+            displayShapeList(shapes)
+          } else {
+            alert("Banyak Titik Sudut Harus Lebih Dari 3");
+          }
+        }
+      });
+    } else {
+        alert("Pilih Titik Sudut dalam Satu Bangun");
+    }
+});
+  
+  
 
 function storeShape(verticesList, shapeType, fragColorList) {
     var shape = {
